@@ -92,7 +92,7 @@ Supports:
 All data is stored in `.txt` files:
 - books.txt  
 - users.txt  
-- history_userID.txt  
+- history.txt  
 - waitlists.txt  
 
 System loads all files on startup & saves on exit.
@@ -130,7 +130,7 @@ SmartLibraryProject/
 ├── data/
 │ ├── books.txt
 │ ├── users.txt
-│ ├── history_*.txt
+│ ├── history.txt
 │ └── waitlists.txt
 │
 ├── tests/
