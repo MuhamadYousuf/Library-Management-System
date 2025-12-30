@@ -65,10 +65,11 @@ public:
             string currIsbn = queueArr[front++];
 
             Book* b = catalog.search(currIsbn);
-            if (b) {
-                cout << b->title << " (Popularity: "
-                     << b->popularityCount << ")\n";
+            if (b && b->availableCopies > 0) {     // <<< only books available
+                cout << b->title 
+                << " (Popularity: " << b->popularityCount << ")\n";
             }
+
 
             int currIdx = getIndex(currIsbn);
 

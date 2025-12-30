@@ -3,55 +3,69 @@
 
 #include <string>
 #include <iostream>
+#include "linkedlist.h"
 #include "hashtable.h"
+using namespace std;
 
 class GenreRecommendation {
 private:
-    static const int MAX_GENRES = 100;
-    static const int MAX_BOOKS = 5000;
+    static const int GENRE_BUCKETS = 50;
 
-    string genres[MAX_GENRES];
-    string booksInGenre[MAX_GENRES][MAX_BOOKS];
-    int bookCount[MAX_GENRES];
+    string genreNames[GENRE_BUCKETS];
+    LinkedList<string> genreBooks[GENRE_BUCKETS];
+
     int genreCount;
 
     HashTable& catalog;
 
 public:
-    GenreRecommendation(HashTable& c) : catalog(c), genreCount(0) {
-        for (int i = 0; i < MAX_GENRES; i++)
-            bookCount[i] = 0;
-    }
+    GenreRecommendation(HashTable& c) : catalog(c), genreCount(0) {}
 
-    // Find genre index or create a new one
+    // returns index for genre OR creates new one
     int getGenreIndex(string genre) {
         for (int i = 0; i < genreCount; i++)
-            if (genres[i] == genre) return i;
+            if (genreNames[i] == genre)
+                return i;
 
-        genres[genreCount] = genre;
-        bookCount[genreCount] = 0;
-        return genreCount++;
+        // new genre
+        if (genreCount < GENRE_BUCKETS) {
+            genreNames[genreCount] = genre;
+            return genreCount++;
+        }
+
+        return -1;  // no space (shouldn't happen)
     }
 
-    // Add ISBN to genre
+    // add ISBN under genre
     void addBook(string genre, string isbn) {
         int index = getGenreIndex(genre);
+        if (index == -1) return;
 
-        if (bookCount[index] < MAX_BOOKS)
-            booksInGenre[index][bookCount[index]++] = isbn;
+        genreBooks[index].insert(isbn);
     }
 
-    // Recommend similar-genre books
+    // recommend books from this genre
     void recommend(string genre) {
         int index = getGenreIndex(genre);
-
-        cout << "\nBooks in Genre: " << genre << "\n";
-
-        for (int i = 0; i < bookCount[index]; i++) {
-            Book* b = catalog.search(booksInGenre[index][i]);
-            if (b)
-                cout << "- " << b->title << " (ISBN: " << b->isbn << ")\n";
+        if (index == -1) {
+            cout << "\nUnknown genre.\n";
+            return;
         }
+
+        cout << "\nBooks in genre: " << genre << "\n";
+
+        Node<string>* curr = genreBooks[index].getHead();
+        if (!curr) {
+            cout << "(No books yet in this genre)\n";
+            return;
+        }
+
+        while (curr) {
+            Book* b = catalog.search(curr->data);
+            if (b && b->availableCopies > 0)   // <<< only recommend available books
+                cout << "- " << b->title << " (ISBN: " << b->isbn << ")\n";
+                curr = curr->next;
+            }
     }
 };
 

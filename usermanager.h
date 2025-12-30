@@ -4,22 +4,32 @@
 #include "user.h"
 
 class UserManager {
-private:
-    User users[1000];   // array instead of vector
+public:
+    User userList[1000];
     int userCount;
 
-public:
     UserManager() : userCount(0) {}
 
-    void addUser(int id, string name) {
-        users[userCount] = User(id, name);
+    // NEW: Prevent duplicate user IDs
+    bool addUser(int id, string name) {
+
+        // check duplicate
+        for (int i = 0; i < userCount; i++) {
+            if (userList[i].userId == id) {
+                return false;   // duplicate found
+            }
+        }
+
+        // add new
+        userList[userCount] = User(id, name);
         userCount++;
+        return true;
     }
 
     User* getUser(int id) {
         for (int i = 0; i < userCount; i++)
-            if (users[i].userId == id)
-                return &users[i];
+            if (userList[i].userId == id)
+                return &userList[i];
         return nullptr;
     }
 

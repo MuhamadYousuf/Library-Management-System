@@ -1,3 +1,0 @@
-111|C++ Programming|Stroustrup|3|3|0
-222|DSA Essentials|Mark|1|1|0
-333|Algorithms|CLRS|2|2|0

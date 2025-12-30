@@ -24,7 +24,8 @@ public:
             return true;
         }
 
-        b->waitlist.push(userId);
+        // custom queue → push()
+        b->waitlist.push(userId);  
         return false;
     }
 
@@ -32,13 +33,24 @@ public:
         Book* b = catalog.search(isbn);
         if (!b) return false;
 
-        if (!b->waitlist.empty()) {
-            int nextUser = b->waitlist.front();
+        // custom queue → isEmpty()
+        if (!b->waitlist.isEmpty()) {
+
+            // custom queue → peek()
+            int nextUser = b->waitlist.peek();
+
+            // custom queue → pop()
             b->waitlist.pop();
+
             users.addHistory(nextUser, isbn);
-        } else {
-            b->availableCopies++;
+            b->popularityCount++;
+
+            // give book to next user
+            return true;
         }
+
+        // no waitlist → increase availableCopies
+        b->availableCopies++;
         return true;
     }
 };

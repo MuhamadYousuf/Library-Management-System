@@ -3,6 +3,9 @@
 
 #include "book.h"
 #include <iostream>
+#include <vector>     // IMPORTANT: include vector
+
+using namespace std;
 
 class HashTable {
 private:
@@ -10,6 +13,7 @@ private:
     int size;
     Book* table;
 
+    // Hash function
     int hashFunc(string key) {
         unsigned long hash = 0;
         for (char c : key)
@@ -17,16 +21,18 @@ private:
         return hash % capacity;
     }
 
+    // Resize table when load factor > 0.7
     void resize() {
         int oldCapacity = capacity;
-        capacity *= 2;
-
         Book* oldTable = table;
+
+        capacity *= 2;
         table = new Book[capacity];
+        size = 0;  // we'll reinsert everything
 
         for (int i = 0; i < oldCapacity; i++) {
             if (oldTable[i].isbn != "") {
-                insert(oldTable[i]);
+                insert(oldTable[i]);   // reinsert actual Book as-is
             }
         }
 
@@ -40,20 +46,38 @@ public:
         table = new Book[capacity];
     }
 
+    // Insert book using linear probing
     void insert(Book b) {
-        if ((float)size / capacity > 0.7)
-            resize();
 
-        int index = hashFunc(b.isbn);
-
-        while (table[index].isbn != "") {
-            index = (index + 1) % capacity;
-        }
-
-        table[index] = b;
-        size++;
+    // 1. Check if ISBN already exists
+    Book* existing = search(b.isbn);
+    if (existing != nullptr) {
+        // Update the existing book instead
+        existing->title = b.title;
+        existing->author = b.author;
+        existing->genre = b.genre;
+        existing->totalCopies = b.totalCopies;
+        existing->availableCopies = b.availableCopies;
+        return;
     }
 
+    // 2. Resize if needed
+    if ((float)size / capacity > 0.7)
+        resize();
+
+    // 3. Insert normally
+    int index = hashFunc(b.isbn);
+
+    while (table[index].isbn != "") {
+        index = (index + 1) % capacity;
+    }
+
+    table[index] = b;
+    size++;
+}
+
+
+    // Search for book
     Book* search(string isbn) {
         int index = hashFunc(isbn);
         int start = index;
@@ -72,9 +96,12 @@ public:
     vector<Book*> getAllBooks() {
         vector<Book*> books;
         books.reserve(size);
-        for (int i = 0; i < capacity; i++)
+
+        for (int i = 0; i < capacity; i++) {
             if (table[i].isbn != "")
                 books.push_back(&table[i]);
+        }
+
         return books;
     }
 };
