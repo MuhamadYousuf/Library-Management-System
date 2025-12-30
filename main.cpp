@@ -4,6 +4,8 @@
 #include "usermanager.h"
 #include "borrowengine.h"
 #include "PBrecommendationengine.h"
+#include "BFSrecommendationengine.h"
+#include "GenreRecommendation.h"
 
 using namespace std;
 
@@ -16,7 +18,9 @@ void menu() {
     cout << "5. Return Book\n";
     cout << "6. View User History\n";
     cout << "7. Popularity Recommendations\n";
-    cout << "8. Exit\n";
+    cout << "8. BFS Recommendations (Co-Borrow Based)\n";
+    cout << "9. Exit\n";
+    cout << "10. Genre Recommendations\n";
     cout << "Choose option: ";
 }
 
@@ -24,7 +28,12 @@ int main() {
     HashTable catalog;
     UserManager users;
     BorrowEngine engine(catalog, users);
-    RecommendationEngine recommender(catalog);
+
+    // Recommendation engines
+    PBRecommendationEngine popRec(catalog);  // Heap-based popularity
+    BFSRecommendation bfsRec(catalog);  
+    GenreRecommendation genreRec(catalog);
+   // Co-borrow BFS graph
 
     int choice;
 
@@ -33,21 +42,30 @@ int main() {
         cin >> choice;
 
         if (choice == 1) {
-            string isbn, title, author;
+            string isbn, title, author, genre;
             int copies;
 
             cout << "\nEnter ISBN: ";
             cin >> isbn;
+
             cout << "Enter Title: ";
             cin.ignore();
             getline(cin, title);
+
             cout << "Enter Author: ";
             getline(cin, author);
+
+            cout << "Enter Genre: ";
+            getline(cin, genre);
+
             cout << "Enter Total Copies: ";
             cin >> copies;
 
-            catalog.insert(Book(isbn, title, author, copies));
+            catalog.insert(Book(isbn, title, author, copies, genre));
+            genreRec.addBook(genre, isbn);
+
             cout << "Book added successfully!\n";
+
         }
 
         else if (choice == 2) {
@@ -91,6 +109,18 @@ int main() {
             cin >> isbn;
 
             bool success = engine.borrowBook(userId, isbn);
+
+            // Add BFS co-borrow edge logic:
+            // If user previously borrowed something, link the new book with all previous ones
+            User* u = users.getUser(userId);
+            if (u) {
+                Node<string>* curr = u->history.getHead();
+                while (curr != nullptr) {
+                    bfsRec.addEdge(curr->data, isbn);
+                    curr = curr->next;
+                }
+            }
+
             if (success)
                 cout << "Book borrowed successfully!\n";
             else
@@ -125,15 +155,13 @@ int main() {
                 cout << "\nBorrowing History for " << u->name << ":\n";
 
                 Node<string>* curr = u->history.getHead();
-
                 while (curr != nullptr) {
                     Book* b = catalog.search(curr->data);
 
-                    if (b) {
+                    if (b)
                         cout << b->title << " (ISBN: " << b->isbn << ")\n";
-                    } else {
-                        cout << curr->data << " (Not found in catalog)\n";
-                    }
+                    else
+                        cout << curr->data << " (Not found)\n";
 
                     curr = curr->next;
                 }
@@ -144,23 +172,50 @@ int main() {
 
         else if (choice == 7) {
             int k;
-            cout << "\nHow many recommendations? ";
+            cout << "\nHow many popular recommendations? ";
             cin >> k;
-            vector<Book*> recs = recommender.getPopular(k);
+
+            vector<Book*> recs = popRec.getPopular(k);
+
             if (recs.empty()) {
-                cout << "No books in catalog.\n";
+                cout << "No books available.\n";
             } else {
                 cout << "\nTop " << recs.size() << " Popular Books:\n";
                 for (int i = 0; i < (int)recs.size(); i++) {
                     Book* b = recs[i];
-                    cout << i + 1 << ". " << b->title << " | " << b->author << " | ISBN: " << b->isbn << " | Borrows: " << b->popularityCount << "\n";
+                    cout << i + 1 << ". " << b->title 
+                         << " | " << b->author 
+                         << " | ISBN: " << b->isbn 
+                         << " | Borrows: " << b->popularityCount << "\n";
                 }
             }
         }
 
         else if (choice == 8) {
+            string isbn;
+            cout << "\nEnter ISBN to start BFS from: ";
+            cin >> isbn;
+
+            bfsRec.traverse(isbn);
+        }
+
+        else if (choice == 9) {
             cout << "Exiting system...\n";
             break;
+        }
+
+        else if (choice == 10) {
+            string isbn;
+            cout << "\nEnter ISBN to get genre-based recommendations: ";
+            cin >> isbn;
+
+            Book* b = catalog.search(isbn);
+
+            if (b) {
+                genreRec.recommend(b->genre);
+            } else {
+                cout << "Book not found.\n";
+            }
         }
 
         else {

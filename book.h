@@ -11,8 +11,10 @@ struct Book {
     string author;
     int totalCopies;
     int availableCopies;
+    string genre;
 
-    queue<int> waitlist;    // user IDs
+
+    queue<int> waitlist;
     int popularityCount;
 
     Book() {
@@ -24,9 +26,9 @@ struct Book {
         popularityCount = 0;
     }
 
-    Book(string i, string t, string a, int tot)
-        : isbn(i), title(t), author(a), totalCopies(tot),
-          availableCopies(tot), popularityCount(0) {}
+    Book(string i, string t, string a, int c, string g)
+    : isbn(i), title(t), author(a), totalCopies(c), availableCopies(c), popularityCount(0), genre(g) {}
+
 };
 
 #endif

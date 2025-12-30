@@ -5,12 +5,12 @@
 #include "maxheap.h"
 #include <vector>
 
-class RecommendationEngine {
+class PBRecommendationEngine {
 private:
     HashTable& catalog;
 
 public:
-    RecommendationEngine(HashTable& c) : catalog(c) {}
+    PBRecommendationEngine(HashTable& c) : catalog(c) {}
 
     std::vector<Book*> getPopular(int k) {
         std::vector<Book*> allBooks = catalog.getAllBooks();
