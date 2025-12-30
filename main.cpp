@@ -3,6 +3,7 @@
 #include "hashtable.h"
 #include "usermanager.h"
 #include "borrowengine.h"
+#include "PBrecommendationengine.h"
 
 using namespace std;
 
@@ -14,7 +15,8 @@ void menu() {
     cout << "4. Borrow Book\n";
     cout << "5. Return Book\n";
     cout << "6. View User History\n";
-    cout << "7. Exit\n";
+    cout << "7. Popularity Recommendations\n";
+    cout << "8. Exit\n";
     cout << "Choose option: ";
 }
 
@@ -22,6 +24,7 @@ int main() {
     HashTable catalog;
     UserManager users;
     BorrowEngine engine(catalog, users);
+    RecommendationEngine recommender(catalog);
 
     int choice;
 
@@ -139,8 +142,23 @@ int main() {
             }
         }
 
-
         else if (choice == 7) {
+            int k;
+            cout << "\nHow many recommendations? ";
+            cin >> k;
+            vector<Book*> recs = recommender.getPopular(k);
+            if (recs.empty()) {
+                cout << "No books in catalog.\n";
+            } else {
+                cout << "\nTop " << recs.size() << " Popular Books:\n";
+                for (int i = 0; i < (int)recs.size(); i++) {
+                    Book* b = recs[i];
+                    cout << i + 1 << ". " << b->title << " | " << b->author << " | ISBN: " << b->isbn << " | Borrows: " << b->popularityCount << "\n";
+                }
+            }
+        }
+
+        else if (choice == 8) {
             cout << "Exiting system...\n";
             break;
         }

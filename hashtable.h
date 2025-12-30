@@ -68,6 +68,15 @@ public:
         }
         return nullptr;
     }
+
+    vector<Book*> getAllBooks() {
+        vector<Book*> books;
+        books.reserve(size);
+        for (int i = 0; i < capacity; i++)
+            if (table[i].isbn != "")
+                books.push_back(&table[i]);
+        return books;
+    }
 };
 
 #endif
