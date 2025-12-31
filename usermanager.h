@@ -10,17 +10,8 @@ public:
 
     UserManager() : userCount(0) {}
 
-    // NEW: Prevent duplicate user IDs
     bool addUser(int id, string name) {
-
-        // check duplicate
-        for (int i = 0; i < userCount; i++) {
-            if (userList[i].userId == id) {
-                return false;   // duplicate found
-            }
-        }
-
-        // add new
+        if (getUser(id) != nullptr) return false; // prevent duplicates
         userList[userCount] = User(id, name);
         userCount++;
         return true;
@@ -35,8 +26,7 @@ public:
 
     void addHistory(int id, string isbn) {
         User* u = getUser(id);
-        if (u)
-            u->history.insert(isbn);
+        if (u) u->history.insert(isbn);
     }
 };
 

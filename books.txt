@@ -1,10 +1,10 @@
-114|1984|George Orwell|Dystopian|5|0|41
-115|To Kill a Mockingbird|Harper Lee|Classic|5|4|18
-116|Deep Work|Cal Newport|Self-Help|3|1|9
-117|The Hobbit|J.R.R. Tolkien|Fantasy|7|6|22
-118|Harry Potter and the Sorcerer's Stone|J.K. Rowling|Fantasy|10|7|50
-119|Sapiens|Yuval Noah Harari|History|4|2|30
-120|The Great Gatsby|F. Scott Fitzgerald|Classic|5|3|16
-111|The Silent Patient|Alex Michaelides|Thriller|5|3|12
-112|Atomic Habits|James Clear|Self-Help|4|1|25
-113|The Alchemist|Paulo Coelho|Fiction|6|2|33
+114|1984|George Orwell|Dystopian|2|2|0
+115|To Kill a Mockingbird|Harper Lee|Classic|1|0|1
+116|Deep Work|Cal Newport|Productivity|2|2|0
+117|The Hobbit|J.R.R. Tolkien|Fantasy|2|2|0
+118|Harry Potter and the Sorcerer's Stone|J.K. Rowling|Fantasy|3|3|0
+119|Sapiens|Yuval Noah Harari|History|2|2|0
+120|The Great Gatsby|F. Scott Fitzgerald|Classic|2|2|0
+111|The Silent Patient|Alex Michaelides|Thriller|2|2|0
+112|Atomic Habits|James Clear|Self-help|3|2|1
+113|The Alchemist|Paulo Coelho|Fiction|2|2|0

@@ -12,24 +12,21 @@ using namespace std;
 #include "PBrecommendationengine.h"
 #include "BFSrecommendationengine.h"
 #include "GenreRecommendation.h"
+#include "searchengine.h"
 
 /* =========================================================
                  UTILITY: TRIM WHITESPACE
    ========================================================= */
-
 string trim(const string& s) {
-    int start = 0, end = s.size() - 1;
-    while (start <= end && (s[start] == ' ' || s[start] == '\t'))
-        start++;
-    while (end >= start && (s[end] == ' ' || s[end] == '\t'))
-        end--;
+    int start = 0, end = (int)s.size() - 1;
+    while (start <= end && (s[start] == ' ' || s[start] == '\t')) start++;
+    while (end >= start && (s[end] == ' ' || s[end] == '\t')) end--;
     return s.substr(start, end - start + 1);
 }
 
 /* =========================================================
-                       SAFE FILE LOADERS
+                       SAFE FILE HELPERS
    ========================================================= */
-
 void ensureFileExists(string filename) {
     ifstream f(filename);
     if (!f) {
@@ -40,15 +37,18 @@ void ensureFileExists(string filename) {
 
 bool safeStoi(const string& s, int& out) {
     try {
-        if (s == "" || s == " " || s == "\t")
-            return false;
-        out = stoi(s);
+        string t = trim(s);
+        if (t.empty()) return false;
+        out = stoi(t);
         return true;
     } catch (...) {
         return false;
     }
 }
 
+/* =========================================================
+                       LOAD FUNCTIONS
+   ========================================================= */
 void loadBooks(HashTable& catalog, GenreRecommendation& genreRec) {
     ensureFileExists("books.txt");
     ifstream file("books.txt");
@@ -106,19 +106,17 @@ void loadUsers(UserManager& users) {
         int id;
         if (!safeStoi(idStr, id)) continue;
 
-        name = trim(name);
-
-        users.addUser(id, name);
+        users.addUser(id, trim(name));
     }
 }
 
-void loadHistory(UserManager& users, BFSRecommendation& bfsRec) {
+void loadHistory(UserManager& users) {
     ensureFileExists("history.txt");
     ifstream file("history.txt");
 
     string line;
     while (getline(file, line)) {
-        if (line == "" || line.find('|') == string::npos) continue;
+        if (line == "") continue;
 
         stringstream ss(line);
         string idStr, isbn;
@@ -130,32 +128,49 @@ void loadHistory(UserManager& users, BFSRecommendation& bfsRec) {
         User* u = users.getUser(userId);
         if (!u) continue;
 
-        string prev = "";
-
         while (getline(ss, isbn, '|')) {
             isbn = trim(isbn);
-            if (isbn == "") continue;
-
-            u->history.insert(isbn);
-
-            if (prev != "")
-                bfsRec.addEdge(prev, isbn);
-
-            prev = isbn;
+            if (!isbn.empty()) u->history.insert(isbn);
         }
     }
 }
 
+void loadBorrowed(UserManager& users) {
+    ensureFileExists("borrowed.txt");
+    ifstream file("borrowed.txt");
+
+    string line;
+    while (getline(file, line)) {
+        if (line == "") continue;
+
+        stringstream ss(line);
+        string idStr, isbn;
+
+        getline(ss, idStr, '|');
+        int userId;
+        if (!safeStoi(idStr, userId)) continue;
+
+        User* u = users.getUser(userId);
+        if (!u) continue;
+
+        while (getline(ss, isbn, '|')) {
+            isbn = trim(isbn);
+            if (!isbn.empty()) u->borrowed.insert(isbn);
+        }
+    }
+}
+
+// ✅ WAITLIST LOAD (the missing one)
 void loadWaitlist(HashTable& catalog) {
     ensureFileExists("waitlist.txt");
     ifstream file("waitlist.txt");
 
     string line;
     while (getline(file, line)) {
-        if (line == "" || line.find('|') == string::npos) continue;
+        if (line == "") continue;
 
         stringstream ss(line);
-        string isbn, userIdStr;
+        string isbn, uidStr;
 
         getline(ss, isbn, '|');
         isbn = trim(isbn);
@@ -164,23 +179,26 @@ void loadWaitlist(HashTable& catalog) {
         Book* b = catalog.search(isbn);
         if (!b) continue;
 
-        while (getline(ss, userIdStr, '|')) {
+        while (getline(ss, uidStr, '|')) {
             int uid;
-            if (!safeStoi(userIdStr, uid)) continue;
-            b->waitlist.push(uid);
+            if (!safeStoi(uidStr, uid)) continue;
+
+            // avoid duplicates in queue
+            if (!b->waitlist.contains(uid)) {
+                b->waitlist.enqueue(uid);
+            }
         }
     }
 }
 
 /* =========================================================
-                       SAFE FILE SAVE FUNCTIONS
+                       SAVE FUNCTIONS
    ========================================================= */
-
 void saveBooks(HashTable& catalog) {
     ofstream file("books.txt");
     auto list = catalog.getAllBooks();
 
-    for (Book* b : list) {
+    for (auto b : list) {
         file << b->isbn << "|"
              << b->title << "|"
              << b->author << "|"
@@ -214,11 +232,27 @@ void saveHistory(UserManager& users) {
     }
 }
 
+void saveBorrowed(UserManager& users) {
+    ofstream file("borrowed.txt");
+    for (int i = 0; i < users.userCount; i++) {
+        User& u = users.userList[i];
+        file << u.userId;
+
+        Node<string>* curr = u.borrowed.getHead();
+        while (curr) {
+            file << "|" << curr->data;
+            curr = curr->next;
+        }
+        file << "\n";
+    }
+}
+
+// ✅ WAITLIST SAVE
 void saveWaitlist(HashTable& catalog) {
     ofstream file("waitlist.txt");
     auto list = catalog.getAllBooks();
 
-    for (Book* b : list) {
+    for (auto b : list) {
         file << b->isbn;
 
         QNode* curr = b->waitlist.getFront();
@@ -233,6 +267,23 @@ void saveWaitlist(HashTable& catalog) {
 /* =========================================================
                             MENUS
    ========================================================= */
+void loginMenu() {
+    cout << "\n===== LOGIN =====\n";
+    cout << "1. Admin Login\n";
+    cout << "2. User Login\n";
+    cout << "3. Exit\n";
+    cout << "Choose: ";
+}
+
+void adminMenu() {
+    cout << "\n===== ADMIN MENU =====\n";
+    cout << "1. Add Book\n";
+    cout << "2. View Full Book Inventory\n";
+    cout << "3. Add User\n";
+    cout << "4. View All Users\n";
+    cout << "5. Logout\n";
+    cout << "Choose option: ";
+}
 
 void userMenu() {
     cout << "\n===== USER MENU =====\n";
@@ -245,46 +296,49 @@ void userMenu() {
     cout << "Choose option: ";
 }
 
-void adminMenu() {
-    cout << "\n===== ADMIN MENU =====\n";
-    cout << "1. Add Book\n";
-    cout << "2. View Full Book Inventory\n";
-    cout << "3. Add User\n";
-    cout << "4. View All Users\n";
-    cout << "5. View User History\n";   // NEW
-    cout << "6. Logout\n";
+void searchMenu() {
+    cout << "\n--- Search Options ---\n";
+    cout << "1. Search by ISBN\n";
+    cout << "2. Search by Title / Author\n";
+    cout << "3. Back\n";
     cout << "Choose option: ";
 }
 
 /* =========================================================
                          MAIN PROGRAM
    ========================================================= */
-
 int main() {
-
     HashTable catalog;
     UserManager users;
+
     BorrowEngine engine(catalog, users);
     PBRecommendationEngine popRec(catalog);
     BFSRecommendation bfsRec(catalog);
     GenreRecommendation genreRec(catalog);
+    SearchEngine searchEngine(catalog);
 
-    // Load safely BEFORE anything else
     loadBooks(catalog, genreRec);
     loadUsers(users);
-    loadHistory(users, bfsRec);
-    loadWaitlist(catalog);
+    loadBorrowed(users);
+    loadHistory(users);
+    loadWaitlist(catalog);   // ✅ now included
 
     while (true) {
-        cout << "\n===== LOGIN =====\n";
-        cout << "1. Admin Login\n";
-        cout << "2. User Login\n";
-        cout << "3. Exit\n";
-        cout << "Choose: ";
+        loginMenu();
         int option;
         cin >> option;
 
-        /* ADMIN LOGIN */
+        if (option == 3) {
+            saveBooks(catalog);
+            saveUsers(users);
+            saveHistory(users);
+            saveBorrowed(users);
+            saveWaitlist(catalog);
+            cout << "Goodbye.\n";
+            break;
+        }
+
+        /* ---------------- ADMIN LOGIN ---------------- */
         if (option == 1) {
             string u, p;
             cout << "\nAdmin Username: ";
@@ -292,117 +346,96 @@ int main() {
             cout << "Admin Password: ";
             cin >> p;
 
-            if (u == "admin" && p == "1234") {
-                cout << "\n[LOGIN SUCCESSFUL]\n";
-
-                while (true) {
-                    adminMenu();
-                    int a; cin >> a;
-
-                    if (a == 1) {
-                        string isbn, title, author, genre;
-                        int copies;
-
-                        cout << "ISBN: ";
-                        cin >> isbn;
-
-                        cout << "Title: ";
-                        cin.ignore();
-                        getline(cin, title);
-
-                        cout << "Author: ";
-                        getline(cin, author);
-
-                        cout << "Genre: ";
-                        getline(cin, genre);
-
-                        cout << "Total Copies: ";
-                        cin >> copies;
-
-                        Book b(isbn, title, author, copies, genre);
-                        catalog.insert(b);
-                        genreRec.addBook(genre, isbn);
-
-                        saveBooks(catalog);
-                        cout << "Book added.\n";
-                    }
-
-                    else if (a == 2) {
-                        auto list = catalog.getAllBooks();
-                        sort(list.begin(), list.end(),
-                             [](Book* x, Book* y) { return x->title < y->title; });
-
-                        cout << "\n===== BOOK INVENTORY =====\n";
-                        for (auto b : list)
-                            cout << b->title << " | ISBN: " << b->isbn
-                                 << " | " << b->availableCopies << "/" << b->totalCopies
-                                 << " copies | Popularity: " << b->popularityCount << "\n";
-                    }
-
-                    else if (a == 3) {
-                        int id;
-                        string name;
-                        cout << "User ID: ";
-                        cin >> id;
-                        cout << "Name: ";
-                        cin.ignore();
-                        getline(cin, name);
-
-                        bool ok = users.addUser(id, name);
-
-                        if (!ok) {
-                            cout << "\n[ERROR] User ID already exists! Choose a different ID.\n";
-                        } 
-                        else {
-                            saveUsers(users);
-                            cout << "\nUser added successfully!\n";
-                        }
-
-                    }
-
-                    else if (a == 4) {
-                        cout << "\n===== ALL USERS =====\n";
-                        for (int i = 0; i < users.userCount; i++)
-                            cout << users.userList[i].userId << " | "
-                                 << users.userList[i].name << "\n";
-                    }
-
-                    else if (a == 5) {
-                        int uid;
-                        cout << "\nEnter User ID to view history: ";
-                        cin >> uid;
-
-                        User* u = users.getUser(uid);
-
-                        if (!u) {
-                            cout << "User not found.\n";
-                        } 
-                        else {
-                            cout << "\n===== Borrowing History for " << u->name << " =====\n";
-                            Node<string>* curr = u->history.getHead();
-                            
-                        if (!curr) {
-                                cout << "(No borrow history)\n";
-                            }
-
-                        while (curr) {
-                            Book* b = catalog.search(curr->data);
-                            if (b) {
-                                cout << "- " << b->title 
-                                    << " (ISBN: " << b->isbn << ")\n";
-                            }
-                            curr = curr->next;
-                        }
-                            cout << "=========================================\n";
-                        }
-                    }
-                    else if (a == 6) break;
-                }
+            if (!(u == "admin" && p == "1234")) {
+                cout << "\nInvalid admin login.\n";
+                continue;
             }
-            else cout << "\nInvalid admin login.\n";
+
+            cout << "\n[ADMIN LOGIN SUCCESSFUL]\n";
+
+            while (true) {
+                adminMenu();
+                int a;
+                cin >> a;
+
+                if (a == 1) {
+                    string isbn, title, author, genre;
+                    int copies;
+
+                    cout << "ISBN: ";
+                    cin >> isbn;
+
+                    cout << "Title: ";
+                    cin.ignore();
+                    getline(cin, title);
+
+                    cout << "Author: ";
+                    getline(cin, author);
+
+                    cout << "Genre: ";
+                    getline(cin, genre);
+
+                    cout << "Total Copies: ";
+                    cin >> copies;
+
+                    Book b(isbn, title, author, copies, genre);
+                    catalog.insert(b);
+                    genreRec.addBook(genre, isbn);
+
+                    saveBooks(catalog);
+                    cout << "Book added/updated.\n";
+                }
+
+                else if (a == 2) {
+                    auto list = catalog.getAllBooks();
+                    sort(list.begin(), list.end(),
+                         [](Book* x, Book* y) { return x->title < y->title; });
+
+                    cout << "\n===== BOOK INVENTORY =====\n";
+                    for (auto b : list) {
+                        cout << b->title << " | ISBN: " << b->isbn
+                             << " | " << b->availableCopies << "/" << b->totalCopies
+                             << " | Popularity: " << b->popularityCount << "\n";
+                    }
+                }
+
+                else if (a == 3) {
+                    int id;
+                    string name;
+
+                    cout << "User ID: ";
+                    cin >> id;
+
+                    cout << "Name: ";
+                    cin.ignore();
+                    getline(cin, name);
+
+                    if (!users.addUser(id, name)) {
+                        cout << "[ERROR] User ID already exists.\n";
+                    } else {
+                        saveUsers(users);
+                        cout << "User added.\n";
+                    }
+                }
+
+                else if (a == 4) {
+                    cout << "\n===== ALL USERS =====\n";
+                    for (int i = 0; i < users.userCount; i++) {
+                        cout << users.userList[i].userId << " | "
+                             << users.userList[i].name << "\n";
+                    }
+                }
+
+                else if (a == 5) {
+                    cout << "[ADMIN LOGOUT]\n";
+                    break;
+                }
+
+                else cout << "Invalid option.\n";
+            }
         }
 
-        /* USER LOGIN */
+        /* ---------------- USER LOGIN ---------------- */
         else if (option == 2) {
             int uid;
             cout << "Enter User ID: ";
@@ -418,7 +451,8 @@ int main() {
 
             while (true) {
                 userMenu();
-                int c; cin >> c;
+                int c;
+                cin >> c;
 
                 if (c == 1) {
                     auto list = catalog.getAllBooks();
@@ -431,89 +465,124 @@ int main() {
                 }
 
                 else if (c == 2) {
-                    string isbn;
-                    cout << "ISBN: ";
-                    cin >> isbn;
+                    while (true) {
+                        searchMenu();
+                        int s;
+                        cin >> s;
 
-                    Book* b = catalog.search(isbn);
-                    if (b)
-                        cout << "Found: " << b->title << " by "
-                             << b->author << "\n";
-                    else
-                        cout << "Not found.\n";
+                        if (s == 1) {
+                            string isbn;
+                            cout << "Enter ISBN: ";
+                            cin >> isbn;
+
+                            Book* b = catalog.search(isbn);
+                            if (b) {
+                                cout << "\nFound:\n" << b->title << " by " << b->author << "\n";
+                            } else {
+                                cout << "Book not found by ISBN.\nTry Title/Author search.\n";
+                            }
+                        }
+                        else if (s == 2) {
+                            Book* b = searchEngine.findBookInteractive();
+                            if (b) cout << "\nFound:\n" << b->title << " by " << b->author << "\n";
+                        }
+                        else if (s == 3) break;
+                        else cout << "Invalid option.\n";
+                    }
                 }
 
                 else if (c == 3) {
-                    string isbn;
-                    cout << "ISBN to borrow: ";
-                    cin >> isbn;
-
-                    Book* b = catalog.search(isbn);
-                    if (!b) {
-                        cout << "Not found.\n";
+                    Book* selected[10];
+                    int selCount = searchEngine.selectBooks(selected, 10, "borrow");
+                    if (selCount == 0) {
+                        cout << "No book selected.\n";
                         continue;
                     }
 
-                    bool ok = engine.borrowBook(uid, isbn);
+                    for (int i = 0; i < selCount; i++) {
+                        Book* b = selected[i];
 
-                    saveBooks(catalog);
-                    saveHistory(users);
-                    saveWaitlist(catalog);
+                        bool ok = engine.borrowBook(uid, b->isbn);
 
-                    if (ok) {
-                        cout << "Borrowed successfully!\n";
-                    }
-                    else {
-                        cout << "\nBook unavailable. Choose recommendation:\n";
-                        cout << "1. Popularity\n";
-                        cout << "2. BFS\n";
-                        cout << "3. Genre\n";
+                        // ✅ save everything related
+                        saveBooks(catalog);
+                        saveHistory(users);
+                        saveBorrowed(users);
+                        saveWaitlist(catalog);
 
-                        int r; cin >> r;
-
-                        if (r == 1) {
-                            auto rec = popRec.getPopular(5);
-                            for (auto x : rec)
-                                cout << "- " << x->title << "\n";
+                        if (ok) {
+                            cout << "Borrowed successfully: " << b->title
+                                 << " (ISBN: " << b->isbn << ")\n";
+                        } else {
+                            // could be: already borrowed OR waitlisted
+                            if (u->borrowed.contains(b->isbn)) {
+                                cout << "[INFO] You already borrowed this book.\n";
+                            } else {
+                                cout << "[INFO] Book unavailable. You are in waitlist (if not already).\n";
+                                cout << "Recommendations:\n1. Popularity\n2. BFS\n3. Genre\nChoose: ";
+                                int r; cin >> r;
+                                if (r == 1) {
+                                    auto rec = popRec.getPopular(5);
+                                    for (auto x : rec) cout << "- " << x->title << "\n";
+                                } else if (r == 2) bfsRec.traverse(b->isbn);
+                                else if (r == 3) genreRec.recommend(b->genre);
+                            }
                         }
-                        else if (r == 2) bfsRec.traverse(isbn);
-                        else if (r == 3) genreRec.recommend(b->genre);
                     }
                 }
 
                 else if (c == 4) {
-                    string isbn;
-                    cout << "ISBN to return: ";
-                    cin >> isbn;
+                    // return by searching (engine checks if user has it)
+                    Book* selected[10];
+                    int selCount = searchEngine.selectBooks(selected, 10, "return");
+                    if (selCount == 0) {
+                        cout << "No book selected.\n";
+                        continue;
+                    }
 
-                    bool ok = engine.returnBook(uid, isbn);
-                    saveBooks(catalog);
-                    saveWaitlist(catalog);
+                    for (int i = 0; i < selCount; i++) {
+                        Book* b = selected[i];
 
-                    if (ok) cout << "Returned.\n";
+                        bool ok = engine.returnBook(uid, b->isbn);
+
+                        saveBooks(catalog);
+                        saveHistory(users);
+                        saveBorrowed(users);
+                        saveWaitlist(catalog);
+
+                        if (ok) {
+                            cout << "Returned successfully: " << b->title
+                                 << " (ISBN: " << b->isbn << ")\n";
+                        } else {
+                            cout << "[ERROR] You cannot return this book (not borrowed).\n";
+                        }
+                    }
                 }
 
                 else if (c == 5) {
                     cout << "\n===== YOUR HISTORY =====\n";
                     Node<string>* curr = u->history.getHead();
+                    if (!curr) cout << "(No history)\n";
+
                     while (curr) {
                         Book* b = catalog.search(curr->data);
-                        if (b) cout << "- " << b->title << "\n";
+                        if (b) cout << "- " << b->title << " (ISBN: " << b->isbn << ")\n";
+                        else cout << "- " << curr->data << " (Unknown ISBN)\n";
                         curr = curr->next;
                     }
                 }
 
-                else if (c == 6) break;
+                else if (c == 6) {
+                    cout << "[USER LOGOUT]\n";
+                    break;
+                }
+
+                else cout << "Invalid option.\n";
             }
         }
 
-        else if (option == 3) {
-            saveBooks(catalog);
-            saveUsers(users);
-            saveHistory(users);
-            saveWaitlist(catalog);
-            cout << "Goodbye.\n";
-            break;
+        else {
+            cout << "Invalid login option.\n";
         }
     }
 

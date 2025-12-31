@@ -10,47 +10,66 @@ private:
     UserManager& users;
 
 public:
-    BorrowEngine(HashTable& c, UserManager& u)
-        : catalog(c), users(u) {}
+    BorrowEngine(HashTable& c, UserManager& u) : catalog(c), users(u) {}
 
+    // return true if borrowed, false otherwise
     bool borrowBook(int userId, string isbn) {
         Book* b = catalog.search(isbn);
         if (!b) return false;
 
+        User* u = users.getUser(userId);
+        if (!u) return false;
+
+        // 1 user cannot borrow same book twice
+        if (u->borrowed.contains(isbn)) {
+            return false;
+        }
+
+        // copies available
         if (b->availableCopies > 0) {
             b->availableCopies--;
-            users.addHistory(userId, isbn);
             b->popularityCount++;
+
+            u->borrowed.insert(isbn);
+            users.addHistory(userId, isbn);
             return true;
         }
 
-        // custom queue → push()
-        b->waitlist.push(userId);  
+        // no copies -> waitlist, but no duplicates
+        if (!b->waitlist.contains(userId)) {
+            b->waitlist.enqueue(userId);
+        }
         return false;
     }
 
+    // return true if successful return, false otherwise
     bool returnBook(int userId, string isbn) {
         Book* b = catalog.search(isbn);
         if (!b) return false;
 
-        // custom queue → isEmpty()
-        if (!b->waitlist.isEmpty()) {
+        User* u = users.getUser(userId);
+        if (!u) return false;
 
-            // custom queue → peek()
-            int nextUser = b->waitlist.peek();
-
-            // custom queue → pop()
-            b->waitlist.pop();
-
-            users.addHistory(nextUser, isbn);
-            b->popularityCount++;
-
-            // give book to next user
-            return true;
+        // user must have borrowed it
+        if (!u->borrowed.removeOne(isbn)) {
+            return false;
         }
 
-        // no waitlist → increase availableCopies
-        b->availableCopies++;
+        // if waitlist has someone, give book to next user
+        int nextUser;
+        if (b->waitlist.dequeue(nextUser)) {
+            User* nu = users.getUser(nextUser);
+            if (nu) {
+                nu->borrowed.insert(isbn);
+                users.addHistory(nextUser, isbn);
+            } else {
+                // if user doesn't exist, give back to inventory
+                b->availableCopies++;
+            }
+        } else {
+            b->availableCopies++;
+        }
+
         return true;
     }
 };

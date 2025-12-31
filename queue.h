@@ -1,62 +1,61 @@
 #ifndef QUEUE_H
 #define QUEUE_H
 
-// A simple linked-list-based queue for integers (User IDs)
-
 struct QNode {
     int data;
     QNode* next;
-
     QNode(int d) : data(d), next(nullptr) {}
 };
 
 class Queue {
 private:
-    QNode* front;
-    QNode* rear;
+    QNode* frontPtr;
+    QNode* rearPtr;
 
 public:
-    Queue() : front(nullptr), rear(nullptr) {}
+    Queue() : frontPtr(nullptr), rearPtr(nullptr) {}
 
-    bool isEmpty() {
-        return front == nullptr;
+    bool isEmpty() const {
+        return frontPtr == nullptr;
     }
 
-    void push(int x) {
+    void enqueue(int x) {
         QNode* n = new QNode(x);
-
-        if (rear == nullptr) {
-            front = rear = n;
+        if (rearPtr == nullptr) {
+            frontPtr = rearPtr = n;
             return;
         }
-
-        rear->next = n;
-        rear = n;
+        rearPtr->next = n;
+        rearPtr = n;
     }
 
-    void pop() {
-        if (isEmpty()) return;
+    // returns false if empty
+    bool dequeue(int& out) {
+        if (isEmpty()) return false;
 
-        QNode* temp = front;
-        front = front->next;
+        QNode* temp = frontPtr;
+        out = temp->data;
+
+        frontPtr = frontPtr->next;
+        if (frontPtr == nullptr) rearPtr = nullptr;
+
         delete temp;
-
-        if (front == nullptr)
-            rear = nullptr;
+        return true;
     }
 
-    int peek() {
-        if (isEmpty()) return -1;  // or throw exception
-        return front->data;
+    // used for file saving (traversal)
+    QNode* getFront() const {
+        return frontPtr;
     }
 
-    QNode* getFront() {
-        return front;
-    }
-
-    // Clear queue
-    void clear() {
-        while (!isEmpty()) pop();
+    // prevent duplicate userId in same waitlist
+    bool contains(int x) const {
+        QNode* curr = frontPtr;
+        while (curr) {
+            if (curr->data == x) return true;
+            curr = curr->next;
+        }
+        return false;
     }
 };
 
