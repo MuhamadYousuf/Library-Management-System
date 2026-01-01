@@ -56,6 +56,17 @@ public:
         return head;
     }
 
+    // ✅ NEW FEATURE: Count items in the list
+    int count() const {
+        int c = 0;
+        Node<T>* curr = head;
+        while (curr) {
+            c++;
+            curr = curr->next;
+        }
+        return c;
+    }
+
     void print() const {
         Node<T>* curr = head;
         while (curr) {

@@ -3,7 +3,7 @@
 
 #include "book.h"
 #include <iostream>
-#include <vector>     // IMPORTANT: include vector
+#include <vector>
 
 using namespace std;
 
@@ -48,34 +48,60 @@ public:
 
     // Insert book using linear probing
     void insert(Book b) {
+        // 1. Check if ISBN already exists
+        Book* existing = search(b.isbn);
+        if (existing != nullptr) {
+            // Update the existing book instead
+            existing->title = b.title;
+            existing->author = b.author;
+            existing->genre = b.genre;
+            existing->totalCopies = b.totalCopies;
+            existing->availableCopies = b.availableCopies;
+            return;
+        }
 
-    // 1. Check if ISBN already exists
-    Book* existing = search(b.isbn);
-    if (existing != nullptr) {
-        // Update the existing book instead
-        existing->title = b.title;
-        existing->author = b.author;
-        existing->genre = b.genre;
-        existing->totalCopies = b.totalCopies;
-        existing->availableCopies = b.availableCopies;
-        return;
+        // 2. Resize if needed
+        if ((float)size / capacity > 0.7)
+            resize();
+
+        // 3. Insert normally
+        int index = hashFunc(b.isbn);
+
+        while (table[index].isbn != "") {
+            index = (index + 1) % capacity;
+        }
+
+        table[index] = b;
+        size++;
     }
 
-    // 2. Resize if needed
-    if ((float)size / capacity > 0.7)
-        resize();
+    // ✅ NEW FEATURE: Remove book
+    bool remove(string isbn) {
+        int index = hashFunc(isbn);
+        int start = index;
 
-    // 3. Insert normally
-    int index = hashFunc(b.isbn);
+        while (table[index].isbn != "") {
+            if (table[index].isbn == isbn) {
+                // Found it. Clear the slot.
+                table[index].isbn = ""; 
+                size--;
 
-    while (table[index].isbn != "") {
-        index = (index + 1) % capacity;
+                // Rehash the chain: subsequent items might belong to this index
+                index = (index + 1) % capacity;
+                while (table[index].isbn != "") {
+                    Book temp = table[index];     
+                    table[index].isbn = "";       // clear old spot
+                    size--;                       // size dec (insert will inc it back)
+                    insert(temp);                 // re-insert to find correct spot
+                    index = (index + 1) % capacity;
+                }
+                return true;
+            }
+            index = (index + 1) % capacity;
+            if (index == start) break;
+        }
+        return false;
     }
-
-    table[index] = b;
-    size++;
-}
-
 
     // Search for book
     Book* search(string isbn) {
@@ -101,7 +127,6 @@ public:
             if (table[i].isbn != "")
                 books.push_back(&table[i]);
         }
-
         return books;
     }
 };

@@ -20,12 +20,18 @@ public:
         User* u = users.getUser(userId);
         if (!u) return false;
 
-        // 1 user cannot borrow same book twice
+        // 1. user cannot borrow same book twice
         if (u->borrowed.contains(isbn)) {
             return false;
         }
 
-        // copies available
+        // ✅ NEW FEATURE: Borrow Limit (Max 3 books)
+        if (u->borrowed.count() >= 3) {
+            cout << "[Limit Reached] You cannot borrow more than 3 books.\n";
+            return false;
+        }
+
+        // 2. copies available
         if (b->availableCopies > 0) {
             b->availableCopies--;
             b->popularityCount++;
@@ -35,7 +41,7 @@ public:
             return true;
         }
 
-        // no copies -> waitlist, but no duplicates
+        // 3. no copies -> waitlist, but no duplicates
         if (!b->waitlist.contains(userId)) {
             b->waitlist.enqueue(userId);
         }

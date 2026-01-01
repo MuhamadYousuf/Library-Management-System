@@ -1,10 +1,8 @@
-114|1984|George Orwell|Dystopian|2|2|0
-115|To Kill a Mockingbird|Harper Lee|Classic|1|0|1
-116|Deep Work|Cal Newport|Productivity|2|2|0
-117|The Hobbit|J.R.R. Tolkien|Fantasy|2|2|0
-118|Harry Potter and the Sorcerer's Stone|J.K. Rowling|Fantasy|3|3|0
-119|Sapiens|Yuval Noah Harari|History|2|2|0
-120|The Great Gatsby|F. Scott Fitzgerald|Classic|2|2|0
-111|The Silent Patient|Alex Michaelides|Thriller|2|2|0
-112|Atomic Habits|James Clear|Self-help|3|2|1
-113|The Alchemist|Paulo Coelho|Fiction|2|2|0
+100|The Great Gatsby|F. Scott Fitzgerald|Classic|5|5|15
+101|1984|George Orwell|Dystopian|5|5|42
+102|Harry Potter and the Sorcerer's Stone|J.K. Rowling|Fantasy|5|5|100
+103|Clean Code|Robert C. Martin|Tech|5|5|55
+104|Introduction to Algorithms|Thomas H. Cormen|Tech|5|5|20
+105|The Hobbit|J.R.R. Tolkien|Fantasy|5|5|30
+106|The C++ Programming Language|Bjarne Stroustrup|Tech|5|5|10
+107|Design Patterns|Erich Gamma|Tech|5|5|25
