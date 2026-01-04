@@ -5,6 +5,7 @@
 #include <string>
 #include <algorithm>
 #include <cctype>
+#include <limits> // Required for numeric_limits
 using namespace std;
 
 #include "hashtable.h"
@@ -29,10 +30,12 @@ private:
 public:
     SearchEngine(HashTable& c) : catalog(c) {}
 
-    // returns best exact/partial match, but also prints suggestions if not found
+    // --------------------------------------------------------
+    // INTERACTIVE SEARCH (For "Search Book" Menu)
+    // --------------------------------------------------------
     Book* findBookInteractive() {
         cout << "\nEnter ISBN / Title / Author: ";
-        cin.ignore(numeric_limits<streamsize>::max(), '\n'); // flush leftover newline
+        cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
         string query;
         getline(cin, query);
 
@@ -48,6 +51,7 @@ public:
         Book* matches[50];
         int matchCount = 0;
 
+        // First Pass: Look for Partial Matches
         for (auto b : list) {
             if (containsIgnoreCase(b->title, query) || containsIgnoreCase(b->author, query)) {
                 matches[matchCount++] = b;
@@ -55,33 +59,41 @@ public:
             }
         }
 
+        // 3) If no partial matches, Look for Suggestions (Fuzzy)
+        bool isSuggestion = false;
         if (matchCount == 0) {
-            cout << "\nNo matching books found.\n\nDid you mean:\n";
-            // show top 3 "close-ish" suggestions (simple: same first letter)
-            int shown = 0;
             for (auto b : list) {
                 if (!query.empty() && !b->title.empty() &&
                     tolower((unsigned char)b->title[0]) == tolower((unsigned char)query[0])) {
-                    cout << "- " << b->title << " (ISBN: " << b->isbn << ") by " << b->author << "\n";
-                    shown++;
-                    if (shown == 3) break;
+                    matches[matchCount++] = b;
+                    if (matchCount >= 5) break; // Limit suggestions to 5
                 }
             }
-            if (shown == 0) cout << "- (no suggestions)\n";
-            cout << "\n";
+            if (matchCount > 0) isSuggestion = true;
+        }
+
+        // If STILL nothing, give up
+        if (matchCount == 0) {
+            cout << "\nNo matching books found.\n";
             return nullptr;
         }
 
-        // if only 1 match, return it directly
-        if (matchCount == 1) return matches[0];
+        // Print Results
+        if (isSuggestion) 
+            cout << "\nNo exact match. Did you mean:\n";
+        else 
+            cout << "\nMatches found:\n";
 
-        cout << "\nMultiple matches found:\n";
         for (int i = 0; i < matchCount; i++) {
             cout << i + 1 << ". " << matches[i]->title
                  << " (ISBN: " << matches[i]->isbn << ") by "
                  << matches[i]->author << "\n";
         }
 
+        // Auto-select if it's a perfect single match (not a suggestion)
+        if (matchCount == 1 && !isSuggestion) return matches[0];
+
+        // Selection Logic
         cout << "Choose 1-" << matchCount << " (0 to cancel): ";
         int choice;
         cin >> choice;
@@ -90,7 +102,9 @@ public:
         return matches[choice - 1];
     }
 
-    // ✅ UPDATED: now prints "borrow" or "return" based on param
+    // --------------------------------------------------------
+    // SELECT MULTIPLE BOOKS (For "Borrow/Return" Menu)
+    // --------------------------------------------------------
     int selectBooks(Book* out[], int maxOut, const char* actionWord) {
         cout << "\nEnter ISBN / Title / Author: ";
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -107,10 +121,10 @@ public:
         }
 
         auto list = catalog.getAllBooks();
-
         Book* matches[50];
         int matchCount = 0;
 
+        // 1. Find Partial Matches
         for (auto x : list) {
             if (containsIgnoreCase(x->title, query) || containsIgnoreCase(x->author, query)) {
                 matches[matchCount++] = x;
@@ -118,35 +132,48 @@ public:
             }
         }
 
+        // 2. If None, Find Suggestions (Fuzzy)
+        bool isSuggestion = false;
         if (matchCount == 0) {
-            cout << "\nBook not found.\n\nDid you mean:\n";
-            int shown = 0;
             for (auto x : list) {
                 if (!query.empty() && !x->title.empty() &&
                     tolower((unsigned char)x->title[0]) == tolower((unsigned char)query[0])) {
-                    cout << "- " << x->title << " (ISBN: " << x->isbn << ") by " << x->author << "\n";
-                    shown++;
-                    if (shown == 3) break;
+                    matches[matchCount++] = x;
+                    if (matchCount >= 5) break; // Limit suggestions
                 }
             }
-            if (shown == 0) cout << "- (no suggestions)\n";
-            cout << "\n";
+            if (matchCount > 0) isSuggestion = true;
+        }
+
+        // 3. If Empty
+        if (matchCount == 0) {
+            cout << "\nNo books found.\n";
             return 0;
         }
 
-        cout << "\nSelect book(s) to " << actionWord << ":\n";
+        // 4. Display Options
+        if (isSuggestion) 
+            cout << "\nNo exact match found. Did you mean one of these?\n";
+        else 
+            cout << "\nSelect book(s) to " << actionWord << ":\n";
+
         for (int i = 0; i < matchCount; i++) {
             cout << i + 1 << ". " << matches[i]->title
                  << " (ISBN: " << matches[i]->isbn << ") by "
                  << matches[i]->author << "\n";
         }
 
-        cout << "\nEnter number(s) separated by space (example: 1 3 4) or 0 to cancel: ";
+        // 5. Unified Selection Logic (Works for matches AND suggestions)
+        cout << "\nEnter number(s) separated by space (example: 1 3) or 0 to cancel: ";
 
         int count = 0;
         while (true) {
             int x;
-            cin >> x;
+            if (!(cin >> x)) { // Catch invalid input (like letters)
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                break;
+            }
 
             if (x == 0) break;
             if (x >= 1 && x <= matchCount) {
@@ -154,7 +181,7 @@ public:
                 if (count == maxOut) break;
             }
 
-            // stop if next char is newline
+            // Stop if next char is newline
             if (cin.peek() == '\n') break;
         }
 
