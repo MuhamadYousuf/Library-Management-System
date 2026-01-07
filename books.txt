@@ -1,8 +1,8 @@
-100|The Great Gatsby|F. Scott Fitzgerald|Classic|5|5|15
-101|1984|George Orwell|Dystopian|5|5|42
-102|Harry Potter and the Sorcerer's Stone|J.K. Rowling|Fantasy|5|5|100
-103|Clean Code|Robert C. Martin|Tech|5|5|55
-104|Introduction to Algorithms|Thomas H. Cormen|Tech|5|5|20
-105|The Hobbit|J.R.R. Tolkien|Fantasy|5|5|30
+100|The Great Gatsby|F. Scott Fitzgerald|Classic|5|3|15
+101|1984|George Orwell|Dystopian|5|2|42
+102|Harry Potter and the Sorcerer's Stone|J.K. Rowling|Fantasy|5|3|101
+103|Clean Code|Robert C. Martin|Tech|5|2|56
+104|Introduction to Algorithms|Thomas H. Cormen|Tech|5|4|20
+105|The Hobbit|J.R.R. Tolkien|Fantasy|5|2|30
 106|The C++ Programming Language|Bjarne Stroustrup|Tech|5|5|10
-107|Design Patterns|Erich Gamma|Tech|5|5|25
+107|Design Patterns|Erich Gamma|Tech|5|3|25

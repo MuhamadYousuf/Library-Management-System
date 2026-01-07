@@ -12,7 +12,7 @@ using namespace std;
 #include "PBrecommendationengine.h"
 #include "BFSrecommendationengine.h"
 #include "GenreRecommendation.h"
-#include "searchengine.h"s
+#include "searchengine.h"
 
 // ---------------------------------------------------------
 // UTILITY FUNCTIONS
