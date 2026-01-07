@@ -1,6 +1,6 @@
-100|The Great Gatsby|F. Scott Fitzgerald|Classic|5|3|15
-101|1984|George Orwell|Dystopian|5|2|42
-102|Harry Potter and the Sorcerer's Stone|J.K. Rowling|Fantasy|5|3|101
+100|The Great Gatsby|F. Scott Fitzgerald|Classic|5|2|16
+101|1984|George Orwell|Dystopian|5|0|44
+102|Harry Potter and the Sorcerer's Stone|J.K. Rowling|Fantasy|5|2|102
 103|Clean Code|Robert C. Martin|Tech|5|2|56
 104|Introduction to Algorithms|Thomas H. Cormen|Tech|5|4|20
 105|The Hobbit|J.R.R. Tolkien|Fantasy|5|2|30
