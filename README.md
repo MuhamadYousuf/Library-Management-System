@@ -1,239 +1,105 @@
-# 📚 Smart Library Management & Recommendation System (C++ Project)
+# 📚 Smart Library Management & Recommendation System
 
-This project implements a fully functional *library management system* built entirely in C++ using **custom data structures**, without relying on STL containers (except queue).  
-It supports book cataloging, borrowing/returning, waitlists, recommendations, popularity ranking, and full file storage.
-
-This project was created as part of the **Data Structures (Fall 2025)** course.
+> A high-performance, console-based library system built in C++ using **custom Data Structures** (Hash Tables, Graphs, Heaps, and Linked Lists) to handle inventory, users, and intelligent recommendations.
 
 ---
 
-# 🚀 Features
+## 🚀 Overview
 
-## 👤 User Features
-- Search for books (ISBN, title, author)
-- Borrow books
-- Return books
-- View borrowing history
-- Receive book recommendations
-- Automatic waitlist enrollment when copies are unavailable
+This project is a fully functional Library Management System designed to demonstrate the practical application of advanced Data Structures and Algorithms. Unlike typical CRUD apps, this system implements core structures from scratch to optimize performance for specific tasks—like **$O(1)$** book lookups and **Graph-based** collaborative filtering.
+
+It features separate portals for **Admins** (inventory management) and **Users** (borrowing/returning), with persistent data storage using flat files.
 
 ---
 
-## 🛠️ Admin Features
-- Add/update/remove books from catalog
-- Manage total/available copies
-- View most borrowed books (popularity BST)
-- View system reports:
-  - Most popular books  
-  - Overdue books  
-  - Total users  
-  - Total borrow operations  
+## ✨ Key Features
+
+### 🧠 Intelligent Recommendations
+* **Collaborative Filtering (BFS):** Suggests books based on reading patterns using a "Co-Borrowing Graph" (e.g., "Users who read *Harry Potter* also read *The Hobbit*").
+* **Popularity Engine (Max Heap):** Instantly retrieves the top trending books using a Binary Max Heap.
+* **Content-Based:** Recommendations by Genre buckets.
+
+### ⚡ High-Performance Core
+* **Custom Hash Table:** Manages the book catalog with **Linear Probing** for collision resolution, ensuring instant search results.
+* **Smart Search Engine:** Features **Fuzzy Matching** and **Typo Tolerance** (e.g., searching "hary poter" finds "Harry Potter").
+* **Waitlist System (Queue):** Automatically queues users when a book is out of stock and assigns it to the next person upon return.
+
+### 📂 Data Persistence
+* Automatically saves and loads all data (`books.txt`, `users.txt`, `history.txt`, `waitlist.txt`, `borrowed.txt`) to ensure no data is lost between sessions.
 
 ---
 
-# 🧠 Core Components
+## 🛠️ Data Structures Used
 
-## 1️⃣ Catalog System
-Uses a **Custom Hash Table** (Open Addressing + Linear Probing + Resizing) for:
-- Fast ISBN lookup
-- Insert/search/update/remove operations
-
-Average time complexity: **O(1)**
-
----
-
-## 2️⃣ Borrowing Engine
-Implements:
-- Borrow logic  
-- Return logic  
-- Waitlist system (queue per book)  
-- Popularity tracking  
-- History recording  
+| Component | Data Structure | Why? |
+| :--- | :--- | :--- |
+| **Book Catalog** | `HashTable` | For **$O(1)$** average time complexity during ISBN lookups. |
+| **User History** | `LinkedList<T>` | To efficiently handle dynamic, growing lists of read books per user. |
+| **Waitlists** | `Queue` | To enforce **FIFO (First-In-First-Out)** fairness for popular books. |
+| **Trending Books**| `MaxHeap` | To extract the "Top K" most borrowed books in **$O(\log n)$** time. |
+| **Recommendations**| `Graph` (Adj List)| To model relationships between books for Breadth-First Search (BFS). |
 
 ---
 
-## 3️⃣ User Management System
-Each user has:
-- Unique ID  
-- Name  
-- Linked list borrowing history  
-- Borrow count  
-- Waitlist status  
+## ⚙️ Installation & Usage
+
+### Prerequisites
+* C++ Compiler (G++, Clang, or MSVC) supporting C++17 or later.
+
+### Build Instructions
+1.  **Clone the repository:**
+    ```bash
+    git clone [https://github.com/MuhamadYousuf/smart-library-system.git](https://github.com/MuhamadYousuf/smart-library-system.git)
+    cd smart-library-system
+    ```
+
+2.  **Compile the code:**
+    ```bash
+    g++ main.cpp -o library_app
+    ```
+
+3.  **Run the application:**
+    * **Windows:** `library_app.exe`
+    * **Mac/Linux:** `./library_app`
 
 ---
 
-## 4️⃣ Recommendation Engine (Graph-Based)
-Books are represented as a graph:
-Nodes → Books
-Edges → Co-borrowing relationships
+## 📖 User Guide
 
+### 1. Admin Portal
+* **Default Credentials:** `admin` / `1234`
+* **Capabilities:** Add books, register users, view user activity logs, remove books, and view popularity reports.
 
-If users often borrow Book A and Book B together, an edge is formed.
-
-Recommendations use:
-- **BFS** for near-neighbor suggestions  
-- **DFS** for deeper exploration  
-
----
-
-## 5️⃣ Popularity Ranking (Balanced BST)
-Books are inserted into a BST based on popularity count:
-Left → less popular
-Right → more popular
-
-
-Supports:
-- Top-K most borrowed books  
-- Popularity reports  
+### 2. User Portal
+* **Login:** Enter your unique **User ID**.
+* **Capabilities:**
+    * **Search:** Type Title, Author, or ISBN (handles partial matches).
+    * **Borrow:** Rent up to 3 books. (Auto-waitlist if unavailable).
+    * **Return:** Select from a numbered list of your currently held books.
+    * **Get Recommendations:** Choose between Popularity, BFS (Similar Users), or Genre.
 
 ---
 
-## 6️⃣ File I/O (Persistent Storage)
-All data is stored in `.txt` files:
-- books.txt  
-- users.txt  
-- history.txt  
-- waitlists.txt  
+## 📂 Project Structure
 
-System loads all files on startup & saves on exit.
-
----
-
-# 🏗️ Project Architecture
-
-SmartLibraryProject/
+```text
+├── main.cpp                 # Entry point & Menu logic
+├── books.txt                # Database file for Books
+├── users.txt                # Database file for Users
+├── history.txt              # Database file for Reading History
+├── borrowed.txt             # Database file for Current Loans
+├── waitlist.txt             # Database file for Queues
 │
-├── src/
-│ ├── main.cpp
-│ │
-│ ├── models/
-│ │ ├── book.h
-│ │ ├── user.h
-│ │ └── linkedlist.h
-│ │
-│ ├── data_structures/
-│ │ ├── hashtable.h
-│ │ ├── bst.h
-│ │ ├── graph.h
-│ │ └── queue.h (optional)
-│ │
-│ ├── core/
-│ │ ├── usermanager.h
-│ │ ├── borrowengine.h
-│ │ ├── recommendationengine.h
-│ │ └── reportengine.h
-│ │
-│ └── fileio/
-│ ├── filemanager.h
-│ └── parsers.h
-│
-├── data/
-│ ├── books.txt
-│ ├── users.txt
-│ ├── history.txt
-│ └── waitlists.txt
-│
-├── tests/
-│ ├── hashtable_tests.cpp
-│ ├── linkedlist_tests.cpp
-│ └── bst_tests.cpp
-│
-├── docs/
-│ ├── Week10_Presentation.pdf
-│ ├── Week11_Documentation.pdf
-│ ├── UML.png
-│ └── file_formats.md
-│
-└── README.md
-
----
-
-# 📦 Data Structures
-
-| Feature | Data Structure | Reason |
-|--------|----------------|--------|
-| ISBN Search | Hash Table | O(1) lookup |
-| Borrow History | LinkedList<T> | Insert-first, ordered log |
-| Waitlist | Queue<int> | FIFO fairness |
-| Recommendation | Graph (Adjacency List) | BFS/DFS relationships |
-| Popularity Ranking | Balanced BST | Sorted popularity |
-| User Storage | Array<User> | Fast indexed access |
-
----
-
-# 🖥️ CLI (Command-Line Interface)
-
-Users interact with the system through a structured menu:
-===== SMART LIBRARY SYSTEM =====
-
-1.Add Book
-
-2.Search Book
-
-3.Add User
-
-4.Borrow Book
-
-5.Return Book
-
-6.View User History
-
-7.View Recommendations
-
-8.Most Popular Books
-
-9.Exit
-
-
-
----
-
-# 🧪 Unit Tests
-Includes tests for:
-- HashTable insert/search/resize  
-- LinkedList insert/iterate  
-- BorrowEngine borrow/return logic  
-- BST insertion & traversal  
-
-Stored in `/tests/`.
-
----
-
-# ✅ Completed Milestones
-### Week 9  
-- Domain study  
-- Initial DS mapping  
-- Project plan  
-
-### Week 10  
-- Architecture  
-- Presentation  
-- Prototype demo  
-
-### Week 11  
-- Full foundation implementation (HashTable, LinkedList, User, Book, BorrowEngine)  
-- CLI working  
-- Documentation delivered  
-
-### Week 12  
-- File I/O  
-- Recommendation graph  
-- BST popularity  
-
-### Week 13  
-- Testing  
-- Final report  
-- Viva preparation  
-
----
-
-# 👤 Author  
-**Aiman**  
-Data Structures — Fall 2025  
-Advisor: *[Instructor Name]*  
-
----
-
-# ⭐ Final Notes  
-This project intentionally avoids STL containers like `vector`, `map`, and `unordered_map` to build a deeper understanding of **manual data structure implementation**, hashing, collision resolution, file handling, and pointer-based logic.
-
+├── headers/
+│   ├── book.h               # Book Data Model
+│   ├── user.h               # User Data Model
+│   ├── hashtable.h          # Custom Hash Table Implementation
+│   ├── linkedlist.h         # Custom Linked List Template
+│   ├── queue.h              # Custom Queue Implementation
+│   ├── maxheap.h            # Binary Max Heap for Popularity
+│   ├── usermanager.h        # User Authentication & Management
+│   ├── borrowengine.h       # Transaction Logic (Borrow/Return)
+│   ├── searchengine.h       # Fuzzy Search & Input Handling
+│   ├── BFSrecommendationengine.h  # Graph-based Recommendation Engine
+│   ├── PBrecommendationengine.h   # Popularity-based Engine
+│   └── GenreRecommendation.h      # Genre-based Engine
